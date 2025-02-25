@@ -14,7 +14,11 @@ const TimeRemainingVisualizer = () => {
         const saved = localStorage.getItem("timeApp_tasks");
         return saved !== null ? JSON.parse(saved) : [];
     });
-    const [newTask, setNewTask] = useState({ name: "", hours: 0, minutes: 30 });
+    const [newTask, setNewTask] = useState({
+        name: "",
+        hours: 0,
+        minutes: 30,
+    });
     // Calculate start time (8 hours after end time)
     const calculateStartTime = () => {
         const startHour = (endHour + 8) % 24;
@@ -32,7 +36,7 @@ const TimeRemainingVisualizer = () => {
             endTime.setDate(endTime.getDate() + 1);
         }
         // Time remaining in milliseconds
-        const remainingMs = endTime - now;
+        const remainingMs = endTime.getTime() - now.getTime();
         return {
             totalMs: remainingMs,
             hours: Math.floor(remainingMs / (1000 * 60 * 60)),
@@ -68,8 +72,8 @@ const TimeRemainingVisualizer = () => {
     };
     // Save to localStorage whenever settings change
     useEffect(() => {
-        localStorage.setItem("timeApp_endHour", endHour);
-        localStorage.setItem("timeApp_endMinute", endMinute);
+        localStorage.setItem("timeApp_endHour", endHour.toString());
+        localStorage.setItem("timeApp_endMinute", endMinute.toString());
     }, [endHour, endMinute]);
     useEffect(() => {
         localStorage.setItem("timeApp_tasks", JSON.stringify(tasks));
@@ -117,13 +121,16 @@ const TimeRemainingVisualizer = () => {
     };
     // Import data from JSON file
     const importData = (event) => {
-        const file = event.target.files[0];
+        const file = event.target.files?.[0];
         if (!file)
             return;
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const importedData = JSON.parse(e.target.result);
+                const result = e.target?.result;
+                if (typeof result !== "string")
+                    return;
+                const importedData = JSON.parse(result);
                 if (importedData.endHour !== undefined) {
                     setEndHour(importedData.endHour);
                 }
