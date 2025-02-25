@@ -7,6 +7,7 @@
   "compilerOptions": {
     "noEmit": false,
     "skipLibCheck": true,
-    "strict": false
+    "strict": false,
+    "noImplicitAny": false
   }
 }

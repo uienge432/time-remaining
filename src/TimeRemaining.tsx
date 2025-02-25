@@ -1,23 +1,59 @@
 import React, { useState, useEffect } from "react";
 
-const TimeRemainingVisualizer = () => {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [endHour, setEndHour] = useState(() => {
+// Define interfaces for our data structures
+interface Task {
+  id: number;
+  name: string;
+  hours: number;
+  minutes: number;
+}
+
+interface NewTask {
+  name: string;
+  hours: number;
+  minutes: number;
+}
+
+interface TimeRemaining {
+  totalMs: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+interface RemainingAfterTasks {
+  isOvertime: boolean;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+interface TaskBlock extends Task {
+  percentage: number;
+}
+
+const TimeRemainingVisualizer: React.FC = () => {
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [endHour, setEndHour] = useState<number>(() => {
     const saved = localStorage.getItem("timeApp_endHour");
     return saved !== null ? parseInt(saved, 10) : 22; // Default end time: 10 PM
   });
-  const [endMinute, setEndMinute] = useState(() => {
+  const [endMinute, setEndMinute] = useState<number>(() => {
     const saved = localStorage.getItem("timeApp_endMinute");
     return saved !== null ? parseInt(saved, 10) : 0;
   });
-  const [tasks, setTasks] = useState(() => {
+  const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem("timeApp_tasks");
     return saved !== null ? JSON.parse(saved) : [];
   });
-  const [newTask, setNewTask] = useState({ name: "", hours: 0, minutes: 30 });
+  const [newTask, setNewTask] = useState<NewTask>({
+    name: "",
+    hours: 0,
+    minutes: 30,
+  });
 
   // Calculate start time (8 hours after end time)
-  const calculateStartTime = () => {
+  const calculateStartTime = (): { startHour: number; startMinute: number } => {
     const startHour = (endHour + 8) % 24;
     const startMinute = endMinute;
     return { startHour, startMinute };
@@ -26,7 +62,7 @@ const TimeRemainingVisualizer = () => {
   const { startHour, startMinute } = calculateStartTime();
 
   // Calculate time remaining in the day
-  const calculateTimeRemaining = () => {
+  const calculateTimeRemaining = (): TimeRemaining => {
     const now = new Date();
 
     // Create today's end time
@@ -44,7 +80,7 @@ const TimeRemainingVisualizer = () => {
     }
 
     // Time remaining in milliseconds
-    const remainingMs: any = endTime - now;
+    const remainingMs = endTime.getTime() - now.getTime();
 
     return {
       totalMs: remainingMs,
@@ -55,7 +91,7 @@ const TimeRemainingVisualizer = () => {
   };
 
   // Calculate time that would remain after tasks
-  const calculateRemainingAfterTasks = () => {
+  const calculateRemainingAfterTasks = (): RemainingAfterTasks => {
     // Total task time in minutes
     const totalTaskMinutes = tasks.reduce((total, task) => {
       return total + task.hours * 60 + task.minutes;
@@ -93,8 +129,8 @@ const TimeRemainingVisualizer = () => {
 
   // Save to localStorage whenever settings change
   useEffect(() => {
-    localStorage.setItem("timeApp_endHour", endHour);
-    localStorage.setItem("timeApp_endMinute", endMinute);
+    localStorage.setItem("timeApp_endHour", endHour.toString());
+    localStorage.setItem("timeApp_endMinute", endMinute.toString());
   }, [endHour, endMinute]);
 
   useEffect(() => {
@@ -111,14 +147,14 @@ const TimeRemainingVisualizer = () => {
   }, []);
 
   // Format time to 12-hour format
-  const formatTime = (hour, minute) => {
+  const formatTime = (hour: number, minute: number): string => {
     const period = hour >= 12 ? "PM" : "AM";
     const hour12 = hour % 12 || 12;
     return `${hour12}:${String(minute).padStart(2, "0")} ${period}`;
   };
 
   // Handle adding a new task
-  const handleAddTask = () => {
+  const handleAddTask = (): void => {
     if (newTask.name.trim() === "") return;
 
     setTasks([...tasks, { ...newTask, id: Date.now() }]);
@@ -126,12 +162,12 @@ const TimeRemainingVisualizer = () => {
   };
 
   // Handle removing a task
-  const handleRemoveTask = (taskId) => {
+  const handleRemoveTask = (taskId: number): void => {
     setTasks(tasks.filter((task) => task.id !== taskId));
   };
 
   // Export data to JSON file
-  const exportData = () => {
+  const exportData = (): void => {
     const dataToExport = {
       endHour,
       endMinute,
@@ -153,14 +189,17 @@ const TimeRemainingVisualizer = () => {
   };
 
   // Import data from JSON file
-  const importData = (event) => {
-    const file = event.target.files[0];
+  const importData = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
-        const importedData = JSON.parse(e.target.result);
+        const result = e.target?.result;
+        if (typeof result !== "string") return;
+
+        const importedData = JSON.parse(result);
 
         if (importedData.endHour !== undefined) {
           setEndHour(importedData.endHour);
@@ -191,7 +230,7 @@ const TimeRemainingVisualizer = () => {
   const remainingAfterTasks = calculateRemainingAfterTasks();
 
   // Calculate task blocks for visualization
-  const calculateTaskBlocks = () => {
+  const calculateTaskBlocks = (): TaskBlock[] => {
     const timeRemaining = calculateTimeRemaining();
     const totalRemainingMinutes =
       timeRemaining.hours * 60 + timeRemaining.minutes;
